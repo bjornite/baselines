@@ -1,5 +1,6 @@
 import os
 import tempfile
+import datetime
 
 import tensorflow as tf
 import zipfile
@@ -8,6 +9,7 @@ import numpy as np
 
 import gym
 import baselines.common.tf_util as U
+import pandas as pd
 from baselines import logger
 from baselines.common.schedules import LinearSchedule
 from baselines import deepq
@@ -221,6 +223,20 @@ def learn(env,
         for t in range(max_timesteps):
             if callback is not None:
                 if callback(locals(), globals()):
+                    time = datetime.datetime.now().strftime("%d%m%Y-%H%M%S-%f")
+                    log_dir = "/home/bjornivar/master/log_archive/OpenAI-DeepQ_CartPole-v0_{}/".format(time)
+                    try:
+                        os.mkdir(log_dir)
+                    except:
+                        pass
+                    log_data = pd.DataFrame()
+                    log_data["return"] = episode_rewards
+                    log_data["agent"] = ["OpenAI-DeepQ"]*len(log_data)
+                    log_data["env"] = ["CartPole-v0"]*len(log_data)
+                    log_data["learning_rate"] = [0]*len(log_data)
+                    log_data["regularization_beta"] = [0]*len(log_data)
+                    log_data["test_results"] = episode_rewards
+                    log_data.to_csv("{0}/returns.csv".format(log_dir))
                     break
             # Take action and update exploration to the newest value
             kwargs = {}
@@ -290,5 +306,4 @@ def learn(env,
             if print_freq is not None:
                 logger.log("Restored model with mean reward: {}".format(saved_mean_reward))
             U.load_state(model_file)
-
     return act
